@@ -52,7 +52,6 @@ void get_input(const char* input_file,safe_file_handle& out)
     input_parser input(input_file);
     input.parse(processes);
   }
-  /*
   std::cout << "\rRemoving displicate PIDs from " << processes.size() << " processes...                 \r" << std::flush;
   processes.unique();
   std::cout << "\rSorting " << processes.size() << " processes...                                       \r" << std::flush;
@@ -64,8 +63,6 @@ void get_input(const char* input_file,safe_file_handle& out)
   out.no_buffer();
   if(std::fwrite(processes.data(),sizeof(process_input),processes.size(),out) != processes.size())
     throw std::system_error(std::make_error_code(std::errc::no_space_on_device));
-  */
-  std::cout << std::endl << processes.size() << std::endl;
 }
 
 }
