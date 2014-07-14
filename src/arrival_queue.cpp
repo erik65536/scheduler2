@@ -3,20 +3,20 @@
 namespace scheduler
 {
 
-arrival_queue::arrival_queue(safe_file_handle&& file)
+arrival_queue::arrival_queue(safe_file_handle&& file,sparse_vector<process>& procs)
 :m_file(std::move(file)),
-m_process(PROCESS_START)
+m_process(procs)
 {}
-
-bool arrival_queue::empty() const
-{
-  return m_empty;
-}
 
 void arrival_queue::get(time_run_t time,boost_slist& list)
 {
-  if(m_empty)
-    return;
+  while(true)
+  {
+    const process_input& in = m_file.get();
+    if(in.arrival() != time)
+      return;
+    list.push_back(m_process.alloc(in.arrival(),in.burst(),in.pid(),in.priority()));
+  }
 }
 
 }

@@ -25,7 +25,7 @@ public:
     if(capacity == 0)
       throw std::system_error(std::make_error_code(std::errc::invalid_argument),"Zero capacity sparse_vector not supported.");
 
-    m_free = static_cast<T*>(std::realloc(nullptr,sizeof(T*)*capacity));
+    m_free = static_cast<T**>(std::realloc(nullptr,sizeof(T*)*capacity));
     if(m_free == nullptr)
       throw std::system_error(std::make_error_code(std::errc::not_enough_memory));
 
@@ -39,9 +39,9 @@ public:
   }
   ~sparse_vector()
   {
-    free(m_free);
+    std::free(m_free);
     for(size_t i=0; i<m_narray; ++i)
-      free(m_array[i]);
+      std::free(m_array[i]);
   }
   bool empty() const
   {
@@ -74,7 +74,7 @@ private:
       throw std::system_error(std::make_error_code(std::errc::not_enough_memory));
     ++m_narray;
 
-    size_t* free = static_cast<size_t*>(std::realloc(m_free,sizeof(size_t)*(m_capacity+m_capacity)));
+    T** free = static_cast<T**>(std::realloc(m_free,sizeof(T*)*(m_capacity+m_capacity)));
     if(free == nullptr)
       throw std::system_error(std::make_error_code(std::errc::not_enough_memory));
     m_free = free;
@@ -85,7 +85,7 @@ private:
     m_capacity += m_capacity;
   }
 private:
-  T* m_free;
+  T** m_free;
   size_t m_size;
   size_t m_capacity;
   size_t m_narray;

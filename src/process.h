@@ -1,7 +1,7 @@
 #pragma once
 #include "include.h"
 #include "node.h"
-#include "slist.h"
+#include "list.h"
 
 namespace scheduler
 {
@@ -43,5 +43,7 @@ private:
 
 typedef slist<process,run_node> run_slist;
 typedef slist<process,boost_node> boost_slist;
+typedef list<process,run_node> run_list;
+typedef list<process,boost_node> boost_list;
 
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include "slist.h"
 
 namespace scheduler
 {
@@ -23,23 +24,23 @@ public:
     {
       return m_t;
     }
-    const T& operator*() const
+    const T* operator*() const
     {
-      return *m_t;
+      return m_t;
     }
-    T& operator*()
+    T* operator*()
     {
-      return *m_t;
+      return m_t;
     }
     iterator& operator++()
     {
-      m_t = m_t->N::next;
+      m_t = static_cast<T*>(m_t->N::prev);
       return *this;
     }
     iterator operator++(int)
     {
       iterator it(m_t);
-      m_t = m_t->N::next;
+      m_t = static_cast<T*>(m_t->N::prev);
       return it;
     }
     bool operator==(const iterator& it) const
@@ -48,7 +49,7 @@ public:
     }
     bool operator!=(const iterator& it) const
     {
-      return m_t == it.m_t;
+      return m_t != it.m_t;
     }
   private:
     T* m_t;
@@ -66,62 +67,70 @@ public:
   }
   void push_front(T* t)
   {
-    t->N::prev = nullptr;
-    t->N::next = m_front;
+    t->N::prev = m_front;
+    t->N::next = nullptr;
     if(m_front != nullptr)
-      m_front->N::prev = t;
-    m_front = t;
-    if(m_back == nullptr)
+      m_front->N::next = t;
+    else
       m_back = t;
+    m_front = t;
   }
   void push_back(T* t)
   {
-    t->N::prev = m_back;
-    t->N::next = nullptr;
+    t->N::prev = nullptr;
+    t->N::next = m_back;
     if(m_back != nullptr)
-      m_back->N::next = t;
-    m_back = t;
-    if(m_front == nullptr)
+      m_back->N::prev = t;
+    else
       m_front = t;
+    m_back = t;
   }
   T* pop_front()
   {
+    if(m_front == nullptr)
+      return nullptr;
     T* t = m_front;
-    if(t == nullptr)
-      return t;
-    m_front = m_front->N::next;
+    m_front = m_front->N::prev;
     if(m_front != nullptr)
-      m_front->N::prev = nullptr;
+      m_front->N::next = nullptr;
     else
       m_back = nullptr;
     return t;
   }
   T* pop_back()
   {
+    if(m_back == nullptr)
+      return nullptr;
     T* t = m_back;
-    if(t == nullptr)
-      return t;
-    m_back = m_back->N::prev;
+    m_back = m_back->N::next;
     if(m_back != nullptr)
-      m_back->N::next = nullptr;
+      m_back->N::prev = nullptr;
     else
       m_front = nullptr;
     return t;
   }
   void remove(T* t)
   {
-    if(m_front == t)
-      m_front = t->N::next;
-    if(m_back == t)
-      m_back = t->N::prev;
-    if(t->N::next != nullptr)
+    if(m_front != t)
       t->N::next->N::prev = t->N::prev;
-    if(t->N::prev != nullptr)
+    else
+      m_front = t->N::prev;
+    if(m_back != t)
       t->N::prev->N::next = t->N::next;
+    else
+      m_back = t->N::next;
+  }
+  const T* front() const
+  {
+    return m_front;
   }
   T* front()
   {
     return m_front;
+  }
+  const T* back() const
+  {
+    return m_back;
   }
   T* back()
   {
@@ -134,6 +143,43 @@ public:
   iterator end()
   {
     return iterator();
+  }
+  void split_to_slist(iterator it,slist<T,N>& list)
+  {
+    if(it == begin())
+    {
+      list.m_front = nullptr;
+      list.m_back = nullptr;
+      return;
+    }
+    if(it == end())
+    {
+      list.m_front = m_front;
+      list.m_back = m_back;
+      m_front = nullptr;
+      m_back = nullptr;
+      return;
+    }
+    list.m_front = m_front;
+    list.m_back = static_cast<T*>(it->N::next);
+    static_cast<T*>(it->N::next)->N::prev = nullptr;
+    it->N::next = nullptr;
+    m_front = *it;
+  }
+  template<class FuncIf,class FuncAnd> void move_if_and(slist<T,N>& list,FuncIf fun_if,FuncAnd fun_and)
+  {
+    for(T* t=m_front; t!=nullptr;)
+    {
+      T* next = static_cast<T*>(t->N::next);
+      if(fun_if(t))
+      {
+        fun_and(t);
+        list.push_back(t);
+      }
+      t = next;
+    }
+    m_front = nullptr;
+    m_back = nullptr;
   }
 private:
   T* m_front;

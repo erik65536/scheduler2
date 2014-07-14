@@ -5,6 +5,7 @@ namespace scheduler
 
 template<typename T,typename N> class slist
 {
+  template<typename T2,typename N2> friend class list;
 public:
   class iterator
   {
@@ -23,32 +24,32 @@ public:
     {
       return m_t;
     }
-    const T& operator*() const
+    const T* operator*() const
     {
-      return *m_t;
+      return m_t;
     }
-    T& operator*()
+    T* operator*()
     {
-      return *m_t;
+      return m_t;
     }
     iterator& operator++()
     {
-      m_t = static_cast<T*>(m_t->N::next);
+      m_t = static_cast<T*>(m_t->N::prev);
       return *this;
     }
     iterator operator++(int)
     {
       iterator it(m_t);
-      m_t = static_cast<T*>(m_t->N::next);
+      m_t = static_cast<T*>(m_t->N::prev);
       return it;
     }
     bool operator==(const iterator& it) const
     {
-      return m_t == m_t;
+      return m_t == it.m_t;
     }
     bool operator!=(const iterator& it) const
     {
-      return m_t != m_t;
+      return m_t != it.m_t;
     }
   private:
     T* m_t;
@@ -66,29 +67,33 @@ public:
   }
   void push_front(T* t)
   {
-    t->N::next = m_front;
-    m_front = t;
-    if(m_back == nullptr)
+    t->N::prev = m_front;
+    if(m_front == nullptr)
       m_back = t;
+    m_front = t;
   }
   void push_back(T* t)
   {
-    t->N::next = nullptr;
+    t->N::prev = nullptr;
     if(m_back != nullptr)
-      m_back->N::next = t;
-    if(m_front == nullptr)
+      m_back->N::prev = t;
+    else
       m_front = t;
+    m_back = t;
   }
   T* pop_front()
   {
+    if(m_front == nullptr)
+      return nullptr;
     T* t = m_front;
-    if(m_front != nullptr)
-    {
-      m_front = static_cast<T*>(m_front->N::next);
-      if(m_front == nullptr)
-        m_back = nullptr;
-    }
+    m_front = static_cast<T*>(m_front->N::prev);
+    if(m_front == nullptr)
+      m_back = nullptr;
     return t;
+  }
+  const T* front() const
+  {
+    return m_front;
   }
   T* front()
   {
@@ -116,63 +121,61 @@ public:
       return;
     }
 
-    T* el1 = m_back;
-    T* el2 = list.m_back;
-    T* l1 = m_front;
-    T* l2 = list.m_front;
+    T* back1 = m_back;
+    T* back2 = list.m_back;
+    T* front1 = m_front;
+    T* front2 = list.m_front;
+    list.m_front = nullptr;
+    list.m_back = nullptr;
 
-    if(*l2 < *l1)
+    if(*front2 < *front1)
     {
-      T* back = l2;
-      l2 = static_cast<T*>(l2->N::next);
-      m_front = back;
-      m_back = back;
-      if(l2 == nullptr)
+      m_front = front2;
+      m_back = front2;
+      front2 = static_cast<T*>(front2->N::prev);
+      if(front2 == nullptr)
       {
-        m_back->N::next = l1;
-        m_back = el1;
+        m_back->N::prev = front1;
+        m_back = back1;
         return;
       }
     }
     else
     {
-      T* back = l1;
-      l1 = static_cast<T*>(l1->N::next);
-      m_front = back;
-      m_back = back;
-      if(l1 == nullptr)
+      m_front = front1;
+      m_back = front1;
+      front1 = static_cast<T*>(front1->N::prev);
+      if(front1 == nullptr)
       {
-        m_back->N::next = l2;
-        m_back = el2;
+        m_back->N::prev = front2;
+        m_back = back2;
         return;
       }
     }
 
     while(true)
     {
-      if(*l2 < *l1)
+      if(*front2 < *front1)
       {
-        T* back = l2;
-        l2 = static_cast<T*>(l2->N::next);
-        m_back->N::next = back;
-        m_back = back;
-        if(l2 == nullptr)
+        m_back->N::prev = front2;
+        m_back = front2;
+        front2 = static_cast<T*>(front2->N::prev);
+        if(front2 == nullptr)
         {
-          m_back->N::next = l1;
-          m_back = el1;
+          m_back->N::prev = front1;
+          m_back = back1;
           return;
         }
       }
       else
       {
-        T* back = l1;
-        l1 = static_cast<T*>(l1->N::next);
-        m_back->N::next = back;
-        m_back = back;
-        if(l1 == nullptr)
+        m_back->N::prev = front1;
+        m_back = front1;
+        front1 = static_cast<T*>(front1->N::prev);
+        if(front1 == nullptr)
         {
-          m_back->N::next = l2;
-          m_back = el2;
+          m_back->N::prev = front2;
+          m_back = back2;
           return;
         }
       }
