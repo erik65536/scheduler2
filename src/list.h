@@ -1,5 +1,6 @@
 #pragma once
 #include "slist.h"
+#include <iostream>
 
 namespace scheduler
 {
@@ -90,7 +91,7 @@ public:
     if(m_front == nullptr)
       return nullptr;
     T* t = m_front;
-    m_front = m_front->N::prev;
+    m_front = static_cast<T*>(m_front->N::prev);
     if(m_front != nullptr)
       m_front->N::next = nullptr;
     else
@@ -112,13 +113,13 @@ public:
   void remove(T* t)
   {
     if(m_front != t)
-      t->N::next->N::prev = t->N::prev;
+      static_cast<T*>(t->N::next)->N::prev = t->N::prev;
     else
-      m_front = t->N::prev;
+      m_front = static_cast<T*>(t->N::prev);
     if(m_back != t)
-      t->N::prev->N::next = t->N::next;
+      static_cast<T*>(t->N::prev)->N::next = t->N::next;
     else
-      m_back = t->N::next;
+      m_back = static_cast<T*>(t->N::next);
   }
   const T* front() const
   {
@@ -166,20 +167,22 @@ public:
     it->N::next = nullptr;
     m_front = *it;
   }
-  template<class FuncIf,class FuncAnd> void move_if_and(slist<T,N>& list,FuncIf fun_if,FuncAnd fun_and)
+  template<class FuncIf,class FuncThen,class FuncElse> void move_if_then_else(slist<T,N>& list,FuncIf fun_if,FuncThen fun_then,FuncElse fun_else)
   {
-    for(T* t=m_front; t!=nullptr;)
+    for(T* t=list.m_front; t!=nullptr;)
     {
-      T* next = static_cast<T*>(t->N::next);
+      T* prev = static_cast<T*>(t->N::prev);
       if(fun_if(t))
       {
-        fun_and(t);
-        list.push_back(t);
+        fun_then(t);
+        push_back(t);
       }
-      t = next;
+      else
+        fun_else(t);
+      t = prev;
     }
-    m_front = nullptr;
-    m_back = nullptr;
+    list.m_front = nullptr;
+    list.m_back = nullptr;
   }
 private:
   T* m_front;

@@ -22,7 +22,7 @@ public:
     if(m_arrival < p.m_arrival)
       return true;
     if(m_arrival == p.m_arrival)
-      return m_pid < p.m_pid;
+      return m_pid > p.m_pid;
     return false;
   }
 private:

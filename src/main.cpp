@@ -1,4 +1,5 @@
 #include "input_parser.h"
+#include "scheduler.h"
 #include <iostream>
 
 void print_help();
@@ -35,6 +36,8 @@ bool schedule(uint64_t quantum,const char* input_file,bool output)
   {
     get_input(input_file,arrivals);
     std::cout << "\r                                                                                    \r" << std::flush;
+    scheduler s(quantum,std::move(arrivals));
+    s.run();
   }
   catch(std::system_error& e)
   {

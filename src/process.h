@@ -29,7 +29,7 @@ public:
   void priority(priority_t pri);
   bool operator<(const process& proc) const
   {
-    return m_pid < proc.m_pid;
+    return m_pid > proc.m_pid;
   }
 private:
   time_run_t m_boost;

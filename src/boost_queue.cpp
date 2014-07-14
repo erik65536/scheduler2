@@ -12,6 +12,7 @@ void boost_queue::get(time_run_t time,boost_slist& list)
   {
     if(it->boost() != time)
       break;
+    ++it;
   }
   m_queue.split_to_slist(it,list);
 }
@@ -19,16 +20,23 @@ void boost_queue::get(time_run_t time,boost_slist& list)
 void boost_queue::insert(time_run_t time,boost_slist& list)
 {
   time_run_t boost = time + BOOST_TIME;
-  m_queue.move_if_and(list,
+  m_queue.move_if_then_else(list,
     [](process* proc){return proc->priority() < MAX_BOOST;},
-    [boost](process* proc){proc->boost(boost);});
+    [boost](process* proc){proc->boost(boost);},
+    [](process* proc){proc->boost(BOOST_NONE);});
+}
+
+void boost_queue::remove(process* proc)
+{
+  if(proc->boost() == BOOST_NONE)
+    return;
+  m_queue.remove(proc);
 }
 
 void boost_queue::boost(boost_slist& list)
 {
   for(process* p : list)
     p->priority(BOOST_TABLE[p->priority()]);
-  //list.sort();
 }
 
 }

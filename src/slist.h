@@ -107,6 +107,40 @@ public:
   {
     return iterator();
   }
+  void insert_sorted(T* t)
+  {
+    if(empty())
+    {
+      t->N::prev = nullptr;
+      m_front = t;
+      m_back = t;
+      return;
+    }
+
+    if(*t < *m_front)
+    {
+      t->N::prev = m_front;
+      m_front = t;
+      return;
+    }
+
+    T* cur = m_front;
+    T* next = static_cast<T*>(cur->N::prev);
+    while(next != nullptr)
+    {
+      if(*t < *next)
+      {
+        cur->N::prev = t;
+        t->N::prev = next;
+        return;
+      }
+      cur = next;
+      next = static_cast<T*>(cur->N::prev);
+    }
+
+    t->N::prev = nullptr;
+    m_back = t;
+  }
   void merge(slist& list)
   {
     if(list.empty())
