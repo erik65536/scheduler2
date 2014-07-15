@@ -138,6 +138,7 @@ public:
       next = static_cast<T*>(cur->N::prev);
     }
 
+    m_back->N::prev = t;
     t->N::prev = nullptr;
     m_back = t;
   }
