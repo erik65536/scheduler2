@@ -1,5 +1,4 @@
 #include "scheduler.h"
-#include <iostream>
 
 namespace scheduler
 {
@@ -18,25 +17,17 @@ void scheduler::run()
   bool arrivals = true;
   while(!m_process.empty() || arrivals)
   {
-    std::cout << "start" << std::endl;
     m_boost.get(time,list);
-    std::cout << "boost.get" << std::endl;
     m_run.remove(list);
-    std::cout << "run.remove" << std::endl;
     m_boost.boost(list);
-    std::cout << "boost.boost" << std::endl;
 
     m_running.get(time,list);
-    std::cout << "runnning.get" << std::endl;
 
     if(arrivals)
     {
       try
       {
         m_arrival.get(time,arrive);
-        std::cout << "arrivals.get" << std::endl;
-        list.merge(arrive);
-        std::cout << "list.merge" << std::endl;
       }
       catch(std::system_error& e)
       {
@@ -44,23 +35,19 @@ void scheduler::run()
           throw;
         arrivals = false;
       }
+      list.merge(arrive);
     }
 
     m_run.insert(list);
-    std::cout << "run.insert" << std::endl;
     m_boost.insert(time,list);
-    std::cout << "boost.insert" << std::endl;
 
     if(m_running.empty())
     {
       process* proc = m_run.top();
-      std::cout << "run.top" << proc << std::endl;
       if(proc != nullptr)
       {
         m_boost.remove(proc);
-        std::cout << "boost.remove" << std::endl;
         m_running.run(time,proc);
-        std::cout << "running.run" << std::endl;
       }
     }
 
