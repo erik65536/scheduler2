@@ -20,7 +20,7 @@ $(function()
     var pri = proc[3];
     var turn = proc[4];
     var wait = proc[5];
-    var hue = hue_table.length/process_n*180;
+    var hue = Object.keys(hue_table).length/process_n*360;
     hue_table[pid] = hue;
     
     table.append($('<tr id="proc_'+pid+'"><td>&nbsp;<span style="background-color:hsl('+hue+',100%,85%)">&nbsp;&nbsp;</span> '+pid+'</td><td>'+arrival+'</td><td>'+term+'</td><td>'+burst+'</td><td>'+pri+'</td><td>'+turn+'</td><td>'+wait+'</td></tr>').mouseenter({pid:pid},
