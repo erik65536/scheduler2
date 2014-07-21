@@ -8,7 +8,7 @@ process::process(time_input_t arrival,time_input_t burst,pid_t pid,priority_t pr
 m_burst{burst},
 m_remain{burst},
 m_pid{pid},
-m_base_priority{priority},
+m_initial_priority{priority},
 m_priority{priority}
 {}
 
@@ -47,9 +47,9 @@ pid_t process::pid() const
   return m_pid;
 }
 
-priority_t process::base_priority() const
+priority_t process::initial_priority() const
 {
-  return m_base_priority;
+  return m_initial_priority;
 }
 
 priority_t process::priority() const

@@ -5,6 +5,7 @@
 namespace scheduler
 {
 
+//stores information about processes that have not yet arrived
 class process_input
 {
 public:

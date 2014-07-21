@@ -8,10 +8,11 @@
 namespace scheduler
 {
 
+//store trivial objects in a vector that may be efficiently expanded using realloc
 template<typename T> class trivial_vector
 {
 private:
-  //static const size_t PARALLEL_SORT_MIN = 1024;
+  static const size_t GROW_DIVISOR = 4;
 public:
   trivial_vector(size_t capacity)
   :m_array{nullptr},
@@ -21,8 +22,8 @@ public:
     //not supported by GCC
     //static_assert(std::is_trivially_copyable<T>::value,"Type must be trivially copyable.");
     static_assert(std::is_trivially_destructible<T>::value,"Type must be trivially destructable.");
-    if(capacity == 0)
-      throw std::system_error(std::make_error_code(std::errc::invalid_argument),"Zero capacity trivial_vector not supported.");
+    if(capacity < GROW_DIVISOR)
+      throw std::system_error(std::make_error_code(std::errc::invalid_argument),"Initial capacity too small.");
     m_array = static_cast<T*>(std::realloc(nullptr,sizeof(T)*capacity));
     if(m_array == nullptr)
       throw std::system_error(std::make_error_code(std::errc::not_enough_memory));
@@ -93,6 +94,7 @@ public:
   }
   void unique()
   {
+    //remove non-unique objects
     if(m_size < 2)
       return;
     if(unique_is_sorted())
@@ -103,48 +105,11 @@ public:
   void sort()
   {
     std::sort(begin(),end());
-    /*
-    size_t nthread = std::thread::hardware_concurrency();
- 
-    if(m_size < PARALLEL_SORT_MIN || m_size < (16 * nthread))
-    {
-      std::sort(begin(),end());
-      return;
-    }
-
-    //ceil
-    size_t size = m_size/nthread + ((m_size % nthread) != 0);
-
-    std::unique_ptr<std::thread[]> thread(new std::thread[nthread]);
-    for(size_t i=0; i<nthread; ++i)
-      thread[i] = std::move(std::thread(&trivial_vector::thread_sort,this,size,i));
-    for(size_t i=0; i<nthread; ++i)
-    {
-      if(thread[i].joinable())
-        thread[i].join();
-    }
-    thread.release();
-
-    size_t start;
-    while(size < m_size)
-    {
-      start = 0;
-      while(start+size < m_size)
-      {
-        std::inplace_merge(begin()+start,begin()+start+size,begin()+std::min(start+size+size,m_size));
-        start += size+size;
-      }
-      size += size;
-    }
-    */
   }
 private:
-  //void thread_sort(size_t size,size_t i)
-  //{
-  //  std::sort(begin()+size*i,begin()+std::min(size*(i+1),m_size));
-  //}
   bool unique_is_sorted()
   {
+    //test if vector is already sorted by unique property
     for(size_t i=0; i<m_size-1; ++i)
     {
       if(m_array[i+1].unique() < m_array[i].unique())
@@ -154,6 +119,7 @@ private:
   }
   void unique_sorted()
   {
+    //remove non-unique objects if list is sorted by unique property
     size_t j=0;
     for(size_t i=1; i<m_size; ++i)
     {
@@ -167,6 +133,7 @@ private:
   }
   void unique_unsorted()
   {
+    //remove non-unique objects if list is not sorted by unique property
     std::unordered_set<decltype(std::declval<T>().unique())> set(m_size);
     size_t j=0;
     for(size_t i=0; i<m_size; ++i)
@@ -182,7 +149,7 @@ private:
   }
   void grow()
   {
-    size_t capacity = m_capacity+m_capacity;
+    size_t capacity = m_capacity+m_capacity/GROW_DIVISOR;
     T* array = static_cast<T*>(std::realloc(m_array,sizeof(T)*capacity));
     if(array == nullptr)
       throw std::system_error(std::make_error_code(std::errc::not_enough_memory));

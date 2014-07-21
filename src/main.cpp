@@ -10,6 +10,7 @@ namespace scheduler
 {
   bool schedule(uint64_t quantum,const char* input_file,bool output);
   void get_input(const char* input_file,safe_file_handle& out);
+  void run_scheduler(uint64_t quantum,bool output,safe_file_handle&& file);
 }
 
 int main(int argc,const char** argv)
@@ -31,13 +32,13 @@ namespace scheduler
 
 bool schedule(uint64_t quantum,const char* input_file,bool output)
 {
-  safe_file_handle arrivals;
   try
   {
+    safe_file_handle arrivals;
+    //parse
     get_input(input_file,arrivals);
-    std::cout << "\r                                                                                    \r" << std::flush;
-    scheduler s(quantum,std::move(arrivals));
-    s.run();
+    //schedule
+    run_scheduler(quantum,output,std::move(arrivals));
   }
   catch(std::system_error& e)
   {
@@ -47,22 +48,25 @@ bool schedule(uint64_t quantum,const char* input_file,bool output)
   return true;
 }
 
+void run_scheduler(uint64_t quantum,bool output,safe_file_handle&& file)
+{
+  scheduler s(quantum,output,std::move(file));
+  s.run();
+}
+
 void get_input(const char* input_file,safe_file_handle& out)
 {
+  //parse input file, remove non-unique pids, sort by arrival, and write to temporary file
   trivial_vector<process_input> processes(256);
-  std::cout << "\rParsing processes from " << input_file << "...                                        \r" << std::flush;
   {
     input_parser input(input_file);
     input.parse(processes);
   }
-  std::cout << "\rRemoving displicate PIDs from " << processes.size() << " processes...                 \r" << std::flush;
   processes.unique();
-  std::cout << "\rSorting " << processes.size() << " processes...                                       \r" << std::flush;
   processes.sort();
-  std::cout << "\rWriting " << processes.size() << " processes to a temporary file...                   \r" << std::flush;
   out = std::tmpfile();
   if(!out)
-    throw std::system_error(std::make_error_code(std::errc::permission_denied),"Unable to create temporaty file");
+    throw std::system_error(std::make_error_code(std::errc::permission_denied),"Unable to create temporary file");
   out.no_buffer();
   if(std::fwrite(processes.data(),sizeof(process_input),processes.size(),out) != processes.size())
     throw std::system_error(std::make_error_code(std::errc::no_space_on_device));
@@ -91,6 +95,7 @@ bool string_to_uint64(const char* string,uint64_t& value)
 
 bool iequals(const char* s1,const char* s2)
 {
+  //case insensitive string comparrison
   char c1 = *(s1++);
   char c2 = *(s2++);
   while(c1 != 0 && c2 != 0)
@@ -106,16 +111,11 @@ bool iequals(const char* s1,const char* s2)
 void print_help()
 {
   std::cout << "scheduler -q [quantum] -i [process file] -n|-o" << std::endl
-    << "  --help     Print help." << std::endl
-    << "   -h" << std::endl
-    << "  --quantum  Time quantum." << std::endl
-    << "   -q" << std::endl
-    << "  --input    Input file." << std::endl
-    << "   -i" << std::endl
-    << "  --out      Output to files. (default)" << std::endl
-    << "   -o" << std::endl
-    << "  --noout    Do not output to files." << std::endl
-    << "   -n" << std::endl;
+    << "  -h, --help                        print help" << std::endl
+    << "  -q, --quantum                     time quantum" << std::endl
+    << "  -i, --input                       input file" << std::endl
+    << "  -o, --out                         output to files (default)" << std::endl
+    << "  -n, --noout                       do not output to files" << std::endl;
 }
 
 bool parse_arguments(int narg,const char** arg,uint64_t& quantum,const char*& input_file,bool& output)

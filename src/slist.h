@@ -3,6 +3,7 @@
 namespace scheduler
 {
 
+//singly linked list
 template<typename T,typename N> class slist
 {
   template<typename T2,typename N2> friend class list;
@@ -34,13 +35,13 @@ public:
     }
     iterator& operator++()
     {
-      m_t = static_cast<T*>(m_t->N::prev);
+      m_t = m_t->N::prev;
       return *this;
     }
     iterator operator++(int)
     {
       iterator it(m_t);
-      m_t = static_cast<T*>(m_t->N::prev);
+      m_t = m_t->N::prev;
       return it;
     }
     bool operator==(const iterator& it) const
@@ -65,6 +66,11 @@ public:
   {
     return m_front == nullptr;
   }
+  void clear()
+  {
+    m_front = nullptr;
+    m_back = nullptr;
+  }
   void push_front(T* t)
   {
     t->N::prev = m_front;
@@ -86,7 +92,7 @@ public:
     if(m_front == nullptr)
       return nullptr;
     T* t = m_front;
-    m_front = static_cast<T*>(m_front->N::prev);
+    m_front = m_front->N::prev;
     if(m_front == nullptr)
       m_back = nullptr;
     return t;
@@ -109,7 +115,7 @@ public:
   }
   void insert_sorted(T* t)
   {
-    if(empty())
+    if(m_front == nullptr)
     {
       t->N::prev = nullptr;
       m_front = t;
@@ -117,30 +123,28 @@ public:
       return;
     }
 
-    if(*t < *m_front)
+    T* cur = m_front;
+    if(*t < *cur)
     {
       t->N::prev = m_front;
       m_front = t;
       return;
     }
 
-    T* cur = m_front;
-    T* next = static_cast<T*>(cur->N::prev);
-    while(next != nullptr)
+    T* next = cur->N::prev;
+    while(true)
     {
-      if(*t < *next)
+      if(next == nullptr)
+        m_back = t;
+      if(next == nullptr || *t < *next)
       {
         cur->N::prev = t;
         t->N::prev = next;
         return;
       }
       cur = next;
-      next = static_cast<T*>(cur->N::prev);
+      next = cur->N::prev;
     }
-
-    m_back->N::prev = t;
-    t->N::prev = nullptr;
-    m_back = t;
   }
   void merge(slist& list)
   {
@@ -167,7 +171,7 @@ public:
     {
       m_front = front2;
       m_back = front2;
-      front2 = static_cast<T*>(front2->N::prev);
+      front2 = front2->N::prev;
       if(front2 == nullptr)
       {
         m_back->N::prev = front1;
@@ -179,7 +183,7 @@ public:
     {
       m_front = front1;
       m_back = front1;
-      front1 = static_cast<T*>(front1->N::prev);
+      front1 = front1->N::prev;
       if(front1 == nullptr)
       {
         m_back->N::prev = front2;
@@ -194,7 +198,7 @@ public:
       {
         m_back->N::prev = front2;
         m_back = front2;
-        front2 = static_cast<T*>(front2->N::prev);
+        front2 = front2->N::prev;
         if(front2 == nullptr)
         {
           m_back->N::prev = front1;
@@ -206,7 +210,7 @@ public:
       {
         m_back->N::prev = front1;
         m_back = front1;
-        front1 = static_cast<T*>(front1->N::prev);
+        front1 = front1->N::prev;
         if(front1 == nullptr)
         {
           m_back->N::prev = front2;

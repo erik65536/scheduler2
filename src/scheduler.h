@@ -7,12 +7,14 @@
 namespace scheduler
 {
 
+//schedule processes
 class scheduler
 {
 private:
+  //initial capacity of sparse_vector
   static const size_t PROCESS_INIT_STORAGE = 1024;
 public:
-  scheduler(time_run_t quantum,safe_file_handle&& arrivals);
+  scheduler(time_run_t quantum,bool output,safe_file_handle&& arrivals);
   void run();
 private:
   sparse_vector<process> m_process;

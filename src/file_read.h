@@ -8,6 +8,9 @@
 namespace scheduler
 {
 
+//read data as blocks of T into a buffer
+//reads C blocks of T into buffer
+//the buffer is filled by a second thread when the buffer is empty
 template<typename T,size_t C> class file_read
 {
 public:
@@ -22,21 +25,10 @@ public:
   m_swap{false},
   m_run{true}
   {
-    m_buf1 = static_cast<T*>(std::malloc(sizeof(T)*C));
-    if(m_buf1 == nullptr)
-      throw std::system_error(std::make_error_code(std::errc::not_enough_memory));
-    m_buf2 = static_cast<T*>(std::malloc(sizeof(T)*C));
-    if(m_buf2 == nullptr)
-      throw std::system_error(std::make_error_code(std::errc::not_enough_memory));
     if(!m_file)
       throw std::system_error(std::make_error_code(std::errc::no_such_file_or_directory));
-    m_file.no_buffer();
-    m_file.rewind();
 
-    bool ret = read();
-    swap();
-    if(ret)
-      m_thread = std::move(std::thread(&file_read::thread,this));
+    init();
   }
   file_read(const char* file_name)
   :m_buf1{nullptr},
@@ -48,24 +40,15 @@ public:
   m_swap{false},
   m_run{true}
   {
-    m_buf1 = static_cast<T*>(std::malloc(sizeof(T)*C));
-    if(m_buf1 == nullptr)
-      throw std::system_error(std::make_error_code(std::errc::not_enough_memory));
-    m_buf2 = static_cast<T*>(std::malloc(sizeof(T)*C));
-    if(m_buf2 == nullptr)
-      throw std::system_error(std::make_error_code(std::errc::not_enough_memory));
     m_file = std::fopen(file_name,"rb");
     if(!m_file)
       throw std::system_error(std::make_error_code(std::errc::no_such_file_or_directory),file_name);
-    m_file.no_buffer();
 
-    bool ret = read();
-    swap();
-    if(ret)
-      m_thread = std::move(std::thread(&file_read::thread,this));
+    init();
   }
   ~file_read()
   {
+    //release reading thread
     {
       std::lock_guard<std::mutex> lock(m_mutex);
       m_run = false;
@@ -85,6 +68,7 @@ public:
     if(m_buf1_n != C)
       throw std::system_error(std::make_error_code(std::errc::io_error));
 
+    //swap buffers
     std::unique_lock<std::mutex> lock(m_mutex);
     while(!m_swap)
       m_condition.wait(lock);
@@ -101,10 +85,32 @@ public:
     ++m_buf_i;
   }
 private:
+  void init()
+  {
+    //not supported by GCC
+    //static_assert(std::is_trivially_copyable<T>::value,"Type must be trivially copyable.");
+    static_assert(std::is_trivially_destructible<T>::value,"Type must be trivially destructable.");
+
+    m_buf1 = static_cast<T*>(std::malloc(sizeof(T)*C));
+    if(m_buf1 == nullptr)
+      throw std::system_error(std::make_error_code(std::errc::not_enough_memory));
+    m_buf2 = static_cast<T*>(std::malloc(sizeof(T)*C));
+    if(m_buf2 == nullptr)
+      throw std::system_error(std::make_error_code(std::errc::not_enough_memory));
+
+    m_file.no_buffer();
+    m_file.rewind();
+
+    bool ret = read();
+    swap();
+    if(ret)
+      m_thread = std::move(std::thread(&file_read::thread,this));
+  }
   void thread()
   {
     while(true)
     {
+      //read next block
       std::unique_lock<std::mutex> lock(m_mutex);
       while(!m_read && m_run)
         m_condition.wait(lock);
@@ -130,6 +136,7 @@ private:
     m_buf1 = m_buf2;
     m_buf2 = temp;
     m_buf1_n = m_buf2_n;
+    m_buf2_n = 0;
     m_buf_i = 0;
   }
 private:

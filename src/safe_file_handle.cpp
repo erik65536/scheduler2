@@ -22,6 +22,14 @@ safe_file_handle::~safe_file_handle()
   close();
 }
 
+safe_file_handle& safe_file_handle::operator=(safe_file_handle&& file)
+{
+  close();
+  m_file = file.m_file;
+  file.m_file = nullptr;
+  return *this;
+}
+
 safe_file_handle& safe_file_handle::operator=(std::FILE* file)
 {
   close();
