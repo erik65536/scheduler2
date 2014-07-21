@@ -47,7 +47,7 @@ output_process::~output_process()
 
   if(!m_file)
     return;
-  std::fprintf(m_file,"},stats:{total:%" PRIu64 ",turnaround:%.2f,wait:%.2f}};",m_nproc,turn,wait);
+  std::fprintf(m_file,"},stats:{total:%" PRIu64 ",turnaround:%.2f,wait:%.2f}};",static_cast<uint64_t>(m_nproc),turn,wait);
 }
 
 void output_process::event(time_run_t arrival,time_run_t terminate,time_run_t burst,pid_t pid,priority_t priority)
